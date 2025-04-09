@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Collector Service
+  collector:
+    build: ./services/collector
+    ports:
+      - "8081:8081"
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./services/collector:/app
+      - /app/node_modules
+    command: npm run start:dev
+    depends_on:
+      - kafka
+
+  # Processor Service
+  processor:
+    build: ./services/processor
+    ports: []
+    environment:
+      - KAFKA_BROKER=kafka:9092
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    volumes:
+      - ./services/processor:/app
+    working_dir: /app
+    command: go run main.go
+    depends_on:
+      - kafka
+      - elasticsearch
+
+  # API Service
+  api:
+    build: ./services/api
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/observability
+      - JWT_SECRET=supersecret
+    depends_on:
+      - postgres
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  # Alert Manager Service
+  alert-manager:
+    build: ./services/alert-manager
+    environment:
+      - DB_URL=postgres://postgres:postgres@postgres:5432/observability
+    depends_on:
+      - postgres
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: observability
+    ports:
+      - "5432:5432"
+
+  # Kafka Broker
+  kafka:
+    image: bitnami/kafka:3.5
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKAJS_NO_PARTITIONER_WARNING=1
+    depends_on:
+      - zookeeper
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.5.1
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    # volumes:
+    #   - ./infra/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
