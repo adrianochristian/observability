@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { CreateLogDto } from './dto/create-log.dto';
 import { Kafka, Producer } from 'kafkajs';
 
@@ -6,6 +6,7 @@ import { Kafka, Producer } from 'kafkajs';
 export class LogsService implements OnModuleInit {
   private kafka = new Kafka({ brokers: [process.env.KAFKA_BROKER || 'localhost:9092'] });
   private producer!: Producer;
+  private readonly logger = new Logger(LogsService.name);
 
   async onModuleInit() {
     this.producer = this.kafka.producer();
@@ -17,6 +18,7 @@ export class LogsService implements OnModuleInit {
       topic: 'logs',
       messages: [{ value: JSON.stringify(log) }],
     });
-    console.log('Publicado no Kafka:', log);
+
+    this.logger.log(`Publicado no Kafka2: ${JSON.stringify(log)}`);
   }
 }

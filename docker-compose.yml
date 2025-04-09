@@ -8,15 +8,24 @@ services:
       - "8081:8081"
     environment:
       - KAFKA_BROKER=kafka:9092
+    volumes:
+      - ./services/collector:/app
+      - /app/node_modules
+    command: npm run start:dev
     depends_on:
       - kafka
 
   # Processor Service
   processor:
     build: ./services/processor
+    ports: []
     environment:
       - KAFKA_BROKER=kafka:9092
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+    volumes:
+      - ./services/processor:/app
+    working_dir: /app
+    command: go run main.go
     depends_on:
       - kafka
       - elasticsearch
@@ -70,6 +79,7 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKAJS_NO_PARTITIONER_WARNING=1
     depends_on:
       - zookeeper
 
