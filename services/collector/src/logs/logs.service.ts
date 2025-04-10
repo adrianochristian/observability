@@ -19,6 +19,6 @@ export class LogsService implements OnModuleInit {
       messages: [{ value: JSON.stringify(log) }],
     });
 
-    this.logger.log(`Publicado no Kafka2: ${JSON.stringify(log)}`);
+    this.logger.log(`Publicado no Kafka: ${JSON.stringify(log)}`);
   }
 }
