@@ -1,9 +1,13 @@
 FROM golang:1.21-alpine
 
-# WORKDIR /app
+WORKDIR /app
 
-# COPY . .
+COPY go.mod ./
+COPY . .            
 
-# RUN go mod tidy && go build -o processor
+RUN go mod tidy
+RUN go build -o /processor
 
-# CMD ["./processor"]
+EXPOSE 2112
+
+CMD ["/processor"]
